@@ -7,17 +7,24 @@ namespace FlowField
     
     public class FlowFieldMaster : ComputeBase
     {
-        
+        [Header("SHADERS")]
         [SerializeField] protected ComputeShader flowFieldCS;
         [SerializeField] protected ComputeShader particlesCS;
         [SerializeField] protected Shader flowFieldShader;
         [SerializeField] protected Shader particlesShader;
+
+        [Header("FLOWFIELD PARAMETERS")] 
+        [SerializeField] protected float cellSize = 2.5f;
 
         protected const string KERNEL_FLOWFIELD = "FlowField";
         protected const string KERNEL_PARTICLES = "Particles";
 
         protected int FLOWFIELD_POINTS_NUM;
         protected int PARTICLES_NUM;
+
+        protected int xPointCount;
+        protected int yPointCount;
+        protected int zPointCount;
         
         protected int flowFieldKernelIndex;
         protected int particlesKernelIndex;
@@ -89,6 +96,16 @@ namespace FlowField
         }
 
         #region GENERATE BUFFER
+        
+        void GetFlowFieldPointAmount()
+        {
+            xPointCount = (int)Mathf.Floor(simulationSpace.x/cellSize);
+            yPointCount = (int)Mathf.Floor(simulationSpace.y/cellSize);
+            zPointCount = (int)Mathf.Floor(simulationSpace.z/cellSize);
+
+            FLOWFIELD_POINTS_NUM = xPointCount * yPointCount * zPointCount;
+
+        }
 
         FlowFieldPointData CreateFlowFieldPoint()
         {

@@ -202,10 +202,11 @@ MonoBehaviour:
   TCOUNT_X: 256
   TCOUNT_Y: 1
   TCOUNT_Z: 1
-  flowFieldCS: {fileID: 0}
-  particlesCS: {fileID: 0}
-  flowFieldShader: {fileID: 0}
-  particlesShader: {fileID: 0}
+  flowFieldCS: {fileID: 7200000, guid: 549968dc84a2f0c449f4297d8a96a9d8, type: 3}
+  particlesCS: {fileID: 7200000, guid: 85c001e3cdf4cf74ba99b91117b96360, type: 3}
+  flowFieldShader: {fileID: 4800000, guid: 64dfbd997ee57264b97746fc6386971d, type: 3}
+  particlesShader: {fileID: 4800000, guid: f469477899528e54dbc74c4d38fff925, type: 3}
+  cellSize: 2.5
 --- !u!4 &1595388305
 Transform:
   m_ObjectHideFlags: 0
