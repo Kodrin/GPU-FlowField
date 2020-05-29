@@ -32,7 +32,7 @@ namespace FlowField
         [SerializeField] protected ThreadCount TCOUNT_X = ThreadCount.T_256;
         [SerializeField] protected ThreadCount TCOUNT_Y = ThreadCount.T_1;
         [SerializeField] protected ThreadCount TCOUNT_Z = ThreadCount.T_1;
-
+        
         protected void Awake()
         {
             
@@ -45,13 +45,19 @@ namespace FlowField
 
         protected virtual void Update()
         {
-            
+                
         }
+        
+        protected abstract void OnRenderObject();
+        protected abstract void OnDestroy();
+        protected abstract void DeleteBuffers();
+        protected abstract void DeleteMaterials();
 
         protected abstract void ComputeInit();
         protected abstract void GenerateBuffers();
         protected abstract void SetConstants();
         protected abstract void Dispatch();
+        
 
         protected void OnDrawGizmos()
         {
