@@ -1,14 +1,85 @@
-﻿// Each #kernel tells which function to compile; you can have many kernels
-#pragma kernel CSMain
+﻿#pragma kernel FlowField
+#pragma kernel Particles
 
-// Create a RenderTexture with enableRandomWrite flag and set it
-// with cs.SetTexture
-RWTexture2D<float4> Result;
+#define X_THREAD_COUNT 256
+#define Y_THREAD_COUNT 1
+#define Z_THREAD_COUNT 1
 
-[numthreads(8,8,1)]
-void CSMain (uint3 id : SV_DispatchThreadID)
+#include "DataStructs.cginc"
+
+float3 _BoundsDimensions;
+float3 _BoundsPosition;
+uint _XCellCount;
+uint _YCellCount;
+uint _ZCellCount;
+
+RWStructuredBuffer<FlowFieldPointData> _FlowFieldPointBuffer;
+RWStructuredBuffer<ParticleData> _ParticleBuffer;
+
+//TO REPEAT PARTICLE POSITION AT THE EDGES
+float3 LoopPosition(inout float3 position)
 {
-    // TODO: insert actual code here!
+	// x axis
+	if(position.x > _BoundsDimensions.x/2 + _BoundsPosition.x)
+	{
+		position.x = -_BoundsDimensions.x/2 + _BoundsPosition.x;
+	}
+	if(position.x < -_BoundsDimensions.x/2 + _BoundsPosition.x)
+	{
+		position.x = _BoundsDimensions.x/2 + _BoundsPosition.x;
+	}
+	
+	//y axis
+	if(position.y > _BoundsDimensions.y/2 + _BoundsPosition.y)
+	{
+		position.y = -_BoundsDimensions.y/2 + _BoundsPosition.y;
+	}
+	
+	if(position.y < -_BoundsDimensions.y/2 + _BoundsPosition.y)
+	{
+		position.y = _BoundsDimensions.y/2 + _BoundsPosition.y;
+	}
+	
+	//z axis 
+	if(position.z > _BoundsDimensions.z/2 + _BoundsPosition.z)
+	{
+		position.z = -_BoundsDimensions.z/2 + _BoundsPosition.z;
+	}
+	if(position.z < -_BoundsDimensions.z/2 + _BoundsPosition.z)
+	{
+		position.z = _BoundsDimensions.z/2 + _BoundsPosition.z;
+	}
+	return position;
+}
 
-    Result[id.xy] = float4(id.x & id.y, (id.x & 15)/15.0, (id.y & 15)/15.0, 0.0);
+//GRABS THE FLOWFIELD GRID INDEX POSITION BASED ON CURRENT POSITION WITHIN GRID
+uint GrabGridIndex(float3 position)
+{
+    float x = floor((position.x - (_BoundsPosition.x - _BoundsDimensions.x/2)) / ((_BoundsDimensions.x / _XCellCount)));
+    float y = floor((position.y - (_BoundsPosition.y - _BoundsDimensions.y/2)) / ((_BoundsDimensions.y / _YCellCount)));
+    float z = floor((position.z - (_BoundsPosition.z - _BoundsDimensions.z/2)) / ((_BoundsDimensions.z / _ZCellCount)));
+    
+    uint flowFieldIndex = (x * _YCellCount + y) * _ZCellCount + z;
+    return flowFieldIndex;
+}
+
+[numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
+void FlowField (uint3 id : SV_DispatchThreadID)
+{
+    int idx = id.x;
+    FlowFieldPointData flowPoint = _FlowFieldPointBuffer[idx];
+    
+    
+    _FlowFieldPointBuffer[idx] = flowPoint;
+
+}
+
+[numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
+void Particles (uint3 id : SV_DispatchThreadID)
+{
+    int idx = id.x;
+    ParticleData indicator = _ParticleBuffer[idx];
+    
+    
+    _ParticleBuffer[idx] = indicator;
 }
