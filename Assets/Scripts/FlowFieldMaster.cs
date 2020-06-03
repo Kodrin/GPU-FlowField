@@ -44,15 +44,15 @@ namespace FlowField
         {
             base.Start();
             ComputeInit();
-            CalculateFlowPointAmount();
-            GenerateFlowFieldBuffer();
-            GenerateParticlesBuffer();
+            GenerateBuffers();
             RenderInit();
         }
 
         protected override void Update()
         {
             base.Update();
+            SetConstants();
+            Dispatch();
         }
 
         protected override void OnRenderObject()
@@ -99,17 +99,7 @@ namespace FlowField
         }
 
         #region GENERATE BUFFER
-        
-        void CalculateFlowPointAmount()
-        {
-            xPointCount = (int)Mathf.Floor(simulationSpace.x/cellSize);
-            yPointCount = (int)Mathf.Floor(simulationSpace.y/cellSize);
-            zPointCount = (int)Mathf.Floor(simulationSpace.z/cellSize);
 
-            FLOWFIELD_POINTS_NUM = xPointCount * yPointCount * zPointCount;
-            Debug.Log(FLOWFIELD_POINTS_NUM);
-        }
-        
         void GetFlowFieldPointAmount()
         {
             xPointCount = (int)Mathf.Floor(simulationSpace.x/cellSize);
@@ -205,17 +195,26 @@ namespace FlowField
         
         protected override void GenerateBuffers()
         {
-            
+            GetFlowFieldPointAmount();
+            GenerateFlowFieldBuffer();
+            GenerateParticlesBuffer();
         }
 
         protected override void SetConstants()
         {
-            
+            flowFieldCS.SetVector("_BoundsDimensions", simulationSpace);
+            flowFieldCS.SetVector("_BoundsPosition", this.transform.position);
+            flowFieldCS.SetInt("_XCellCount", xPointCount);
+            flowFieldCS.SetInt("_YCellCount", yPointCount);
+            flowFieldCS.SetInt("_ZCellCount", zPointCount);
         }
 
         protected override void Dispatch()
         {
-            
+            flowFieldCS.SetBuffer(flowFieldKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
+            flowFieldCS.Dispatch(flowFieldKernelIndex, (int)TCOUNT_X, 1, 1);
+            //flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
+            //flowFieldCS.Dispatch(particlesKernelIndex, particlesThreadGroups, 1, 1);
         }
         
         #endregion

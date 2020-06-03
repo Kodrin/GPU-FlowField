@@ -64,7 +64,7 @@
                 float4 color;
                 fixed4 white = fixed4(1,1,1,1);
                 fixed4 black = fixed4(0,0,0,0);
-                color = lerp(black, white, intensity);
+                color = float4(direction, 1);
                 //color = length(direction) * intensity;
                 
                 //direction
