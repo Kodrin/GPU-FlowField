@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Runtime.InteropServices;
 
 namespace FlowField
 {
@@ -9,7 +10,6 @@ namespace FlowField
     {
         [Header("SHADERS")]
         [SerializeField] protected ComputeShader flowFieldCS;
-        [SerializeField] protected ComputeShader particlesCS;
         [SerializeField] protected Shader flowFieldShader;
         [SerializeField] protected Shader particlesShader;
 
@@ -19,8 +19,8 @@ namespace FlowField
         protected const string KERNEL_FLOWFIELD = "FlowField";
         protected const string KERNEL_PARTICLES = "Particles";
 
-        protected int FLOWFIELD_POINTS_NUM;
-        protected int PARTICLES_NUM;
+        [SerializeField] protected int FLOWFIELD_POINTS_NUM;
+        [SerializeField] protected int PARTICLES_NUM;
 
         protected int xPointCount;
         protected int yPointCount;
@@ -44,6 +44,9 @@ namespace FlowField
         {
             base.Start();
             ComputeInit();
+            CalculateFlowPointAmount();
+            GenerateFlowFieldBuffer();
+            GenerateParticlesBuffer();
             RenderInit();
         }
 
@@ -97,6 +100,16 @@ namespace FlowField
 
         #region GENERATE BUFFER
         
+        void CalculateFlowPointAmount()
+        {
+            xPointCount = (int)Mathf.Floor(simulationSpace.x/cellSize);
+            yPointCount = (int)Mathf.Floor(simulationSpace.y/cellSize);
+            zPointCount = (int)Mathf.Floor(simulationSpace.z/cellSize);
+
+            FLOWFIELD_POINTS_NUM = xPointCount * yPointCount * zPointCount;
+            Debug.Log(FLOWFIELD_POINTS_NUM);
+        }
+        
         void GetFlowFieldPointAmount()
         {
             xPointCount = (int)Mathf.Floor(simulationSpace.x/cellSize);
@@ -107,11 +120,11 @@ namespace FlowField
 
         }
 
-        FlowFieldPointData CreateFlowFieldPoint()
+        FlowFieldPointData CreateFlowFieldPoint(Vector3 position)
         {
             FlowFieldPointData point = new FlowFieldPointData();
 
-            point.position = Random.insideUnitSphere;
+            point.position = position;
             point.direction = Random.insideUnitSphere;
             point.intensity = Random.value;
             
@@ -131,12 +144,47 @@ namespace FlowField
 
         protected void GenerateFlowFieldBuffer()
         {
-            
+            flowFieldBuffer = new ComputeBuffer(FLOWFIELD_POINTS_NUM, Marshal.SizeOf(typeof(FlowFieldPointData)));
+            var flowPoints = new FlowFieldPointData[FLOWFIELD_POINTS_NUM];
+
+            int iterations = 0;
+            for (int x = 0; x < xPointCount; x++)
+            {
+                for (int y = 0; y < yPointCount; y++)
+                {
+                    for (int z = 0; z < zPointCount; z++)
+                    {
+                        var index =  (x * yPointCount + y) * zPointCount + z;
+
+                        Vector3 position = new Vector3(
+                            simulationSpace.x / xPointCount * x + cellSize/2,
+                            simulationSpace.y / yPointCount * y + cellSize/2,
+                            simulationSpace.z / zPointCount * z + cellSize/2
+                        );
+                        position += this.transform.position - simulationSpace/2;
+						
+                        flowPoints[index] = CreateFlowFieldPoint(position);
+                        iterations++;
+                    }
+                }
+            }
+			
+            Debug.Log(iterations);
+			
+            flowFieldBuffer.SetData(flowPoints);
         }
 
         protected void GenerateParticlesBuffer()
         {
-            
+            particlesBuffer = new ComputeBuffer(PARTICLES_NUM, Marshal.SizeOf(typeof(ParticleData)));
+            var particles = new ParticleData[PARTICLES_NUM];
+		
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i] = CreateParticle();
+            }
+			
+            particlesBuffer.SetData(particles);
         }
         
         #endregion
@@ -152,7 +200,7 @@ namespace FlowField
 
             //KERNELS 
             flowFieldKernelIndex = flowFieldCS.FindKernel(KERNEL_FLOWFIELD);
-            particlesKernelIndex = particlesCS.FindKernel(KERNEL_PARTICLES);
+            particlesKernelIndex = flowFieldCS.FindKernel(KERNEL_PARTICLES);
         }
         
         protected override void GenerateBuffers()
