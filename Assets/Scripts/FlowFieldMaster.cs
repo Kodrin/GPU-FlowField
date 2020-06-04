@@ -5,6 +5,32 @@ using System.Runtime.InteropServices;
 
 namespace FlowField
 {
+    [System.Serializable]
+    public enum ParticleCounter
+    {	
+        N_128 = 128,
+        N_256 = 256,
+        N_512 = 512,
+        N_1K = 1024,
+        N_2K = 2048,
+        N_4K = 4096,
+        N_8K = 8192,
+        N_16K = 16384,
+        N_24k = 24576,
+        N_32K = 32768,
+        N_64K = 65536,
+        N_128K = 131072
+    }
+    
+    [System.Serializable]
+    public class ComputeOperation
+    {
+        public uint XNumThread;
+        public uint YNumThread;
+        public uint ZNumThread;
+        public ComputeBuffer buffer;
+        
+    }
     
     public class FlowFieldMaster : ComputeBase
     {
@@ -20,7 +46,7 @@ namespace FlowField
         protected const string KERNEL_PARTICLES = "Particles";
 
         [SerializeField] protected int FLOWFIELD_POINTS_NUM;
-        [SerializeField] protected int PARTICLES_NUM;
+        [SerializeField] protected ParticleCounter PARTICLES_NUM;
 
         protected int xPointCount;
         protected int yPointCount;
@@ -29,8 +55,13 @@ namespace FlowField
         protected int flowFieldKernelIndex;
         protected int particlesKernelIndex;
 
-        protected int flowFieldThreadGroups;
-        protected int particlesThreadGroups;
+        protected uint XNumThreadFlowField;
+        protected uint YNumThreadFlowField;
+        protected uint ZNumThreadFlowField;
+       
+        protected uint XNumThreadParticles;
+        protected uint YNumThreadParticles;
+        protected uint ZNumThreadParticles;
 
         protected ComputeBuffer flowFieldBuffer;
         protected ComputeBuffer particlesBuffer;
@@ -57,7 +88,7 @@ namespace FlowField
 
         protected override void OnRenderObject()
         {
-            RenderFlowField();
+            //RenderFlowField();
             RenderParticles();
         }
         
@@ -74,13 +105,13 @@ namespace FlowField
             if (flowFieldBuffer != null)
             {
                 flowFieldBuffer.Release();
-                flowFieldBuffer = null;
+                // flowFieldBuffer = null;
             }
 
             if(particlesBuffer != null)
             {
                 particlesBuffer.Release();
-                particlesBuffer = null;
+                // particlesBuffer = null;
             }
         }
         
@@ -89,16 +120,25 @@ namespace FlowField
             if (flowFieldMat != null)
             {
                 DestroyImmediate(flowFieldMat);
-                flowFieldMat = null;
+                // flowFieldMat = null;
             }
             if (particlesMat != null)
             {
                 DestroyImmediate(particlesMat);
-                particlesMat = null;
+                // particlesMat = null;
             }
         }
 
         #region GENERATE BUFFER
+        
+        Vector3 RandomWithinSpace()
+        {
+            Vector3 rand = Random.insideUnitSphere;
+            Vector3 position = new Vector3(simulationSpace.x/2 * rand.x, simulationSpace.y/2 * rand.y, simulationSpace.z/2 * rand.z);
+            position += this.transform.position;
+
+            return position;
+        }
 
         void GetFlowFieldPointAmount()
         {
@@ -125,7 +165,7 @@ namespace FlowField
         {
             ParticleData particle = new ParticleData();
 
-            particle.position = Random.insideUnitSphere;
+            particle.position = RandomWithinSpace();
             particle.direction = Random.insideUnitSphere;
             particle.speed = Random.value;
             
@@ -166,8 +206,8 @@ namespace FlowField
 
         protected void GenerateParticlesBuffer()
         {
-            particlesBuffer = new ComputeBuffer(PARTICLES_NUM, Marshal.SizeOf(typeof(ParticleData)));
-            var particles = new ParticleData[PARTICLES_NUM];
+            particlesBuffer = new ComputeBuffer((int)PARTICLES_NUM, Marshal.SizeOf(typeof(ParticleData)));
+            var particles = new ParticleData[(int)PARTICLES_NUM];
 		
             for (int i = 0; i < particles.Length; i++)
             {
@@ -181,18 +221,22 @@ namespace FlowField
 
 
         #region COMPUTE FUNCTIONS
-        
+
         protected override void ComputeInit()
         {
             //THREAD GROUPS 
-            flowFieldThreadGroups = Mathf.Max( 1, (int)FLOWFIELD_POINTS_NUM / (int)TCOUNT_X);	
-            particlesThreadGroups = Mathf.Max( 1, (int)PARTICLES_NUM / (int)TCOUNT_X);
+            XNumThreadFlowField = (uint)Mathf.Max( 1, (int)FLOWFIELD_POINTS_NUM / (int)TCOUNT_X);	
+            XNumThreadParticles = (uint)Mathf.Max( 1, (int)PARTICLES_NUM / (int)TCOUNT_X);
 
             //KERNELS 
             flowFieldKernelIndex = flowFieldCS.FindKernel(KERNEL_FLOWFIELD);
             particlesKernelIndex = flowFieldCS.FindKernel(KERNEL_PARTICLES);
+            // flowFieldCS.GetKernelThreadGroupSizes(flowFieldKernelIndex, out XNumThreadFlowField,
+                // out YNumThreadFlowField, out ZNumThreadFlowField);
+            // flowFieldCS.GetKernelThreadGroupSizes(particlesKernelIndex, out XNumThreadParticles,
+                // out YNumThreadParticles, out ZNumThreadParticles);
         }
-        
+
         protected override void GenerateBuffers()
         {
             GetFlowFieldPointAmount();
@@ -211,10 +255,22 @@ namespace FlowField
 
         protected override void Dispatch()
         {
+            DispatchParticles();
+            // DispatchFlowField();
+        }
+
+        protected void DispatchFlowField()
+        {
             flowFieldCS.SetBuffer(flowFieldKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
-            flowFieldCS.Dispatch(flowFieldKernelIndex, (int)TCOUNT_X, 1, 1);
-            //flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
-            //flowFieldCS.Dispatch(particlesKernelIndex, particlesThreadGroups, 1, 1);
+            flowFieldCS.Dispatch(flowFieldKernelIndex, (int)XNumThreadFlowField, (int)1, (int)1);
+        }
+
+        protected void DispatchParticles()
+        {
+            flowFieldCS.SetBuffer(particlesKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
+            flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
+            flowFieldCS.Dispatch(particlesKernelIndex, (int) XNumThreadParticles, (int) 1,
+                (int) 1);
         }
         
         #endregion
@@ -252,7 +308,7 @@ namespace FlowField
         protected void RenderParticles()
         {
             particlesMat.SetPass(0); 
-            particlesMat.SetBuffer("_ParticlesBuffer", particlesBuffer);
+            particlesMat.SetBuffer("_ParticleBuffer", particlesBuffer);
             Graphics.DrawProceduralNow(MeshTopology.Points, (int)PARTICLES_NUM);
         }
         
