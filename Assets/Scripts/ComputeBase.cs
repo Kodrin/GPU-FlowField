@@ -50,7 +50,7 @@ namespace FlowField
         
         protected abstract void OnRenderObject();
         protected abstract void OnDestroy();
-        protected abstract void DeleteBuffers();
+        protected abstract void ReleaseBuffers();
         protected abstract void DeleteMaterials();
 
         protected abstract void ComputeInit();

@@ -205,9 +205,9 @@ MonoBehaviour:
   flowFieldCS: {fileID: 7200000, guid: 549968dc84a2f0c449f4297d8a96a9d8, type: 3}
   flowFieldShader: {fileID: 4800000, guid: 64dfbd997ee57264b97746fc6386971d, type: 3}
   particlesShader: {fileID: 4800000, guid: f469477899528e54dbc74c4d38fff925, type: 3}
-  cellSize: 2
+  cellSize: 0.3
   FLOWFIELD_POINTS_NUM: 0
-  PARTICLES_NUM: 512
+  PARTICLES_NUM: 2048
 --- !u!4 &1595388305
 Transform:
   m_ObjectHideFlags: 0

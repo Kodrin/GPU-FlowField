@@ -88,30 +88,30 @@ namespace FlowField
 
         protected override void OnRenderObject()
         {
-            //RenderFlowField();
+            RenderFlowField();
             RenderParticles();
         }
         
         protected override void OnDestroy()
         {
-            DeleteBuffers();
+            ReleaseBuffers();
             DeleteMaterials();
         }
         
         #endregion
 
-        protected override void DeleteBuffers()
+        protected override void ReleaseBuffers()
         {
             if (flowFieldBuffer != null)
             {
                 flowFieldBuffer.Release();
-                // flowFieldBuffer = null;
+                flowFieldBuffer = null;
             }
 
             if(particlesBuffer != null)
             {
                 particlesBuffer.Release();
-                // particlesBuffer = null;
+                particlesBuffer = null;
             }
         }
         
@@ -120,12 +120,12 @@ namespace FlowField
             if (flowFieldMat != null)
             {
                 DestroyImmediate(flowFieldMat);
-                // flowFieldMat = null;
+                flowFieldMat = null;
             }
             if (particlesMat != null)
             {
                 DestroyImmediate(particlesMat);
-                // particlesMat = null;
+                particlesMat = null;
             }
         }
 
@@ -256,21 +256,22 @@ namespace FlowField
         protected override void Dispatch()
         {
             DispatchParticles();
-            // DispatchFlowField();
+            DispatchFlowField();
         }
 
         protected void DispatchFlowField()
         {
             flowFieldCS.SetBuffer(flowFieldKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
-            flowFieldCS.Dispatch(flowFieldKernelIndex, (int)XNumThreadFlowField, (int)1, (int)1);
+            // flowFieldCS.Dispatch(flowFieldKernelIndex, Mathf.CeilToInt(FLOWFIELD_POINTS_NUM / (int)TCOUNT_X) + 1, 1, 1);
+            flowFieldCS.Dispatch(flowFieldKernelIndex, Mathf.CeilToInt(FLOWFIELD_POINTS_NUM / (int)TCOUNT_X) + 1, 1, 1);
         }
 
         protected void DispatchParticles()
         {
             flowFieldCS.SetBuffer(particlesKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
             flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
-            flowFieldCS.Dispatch(particlesKernelIndex, (int) XNumThreadParticles, (int) 1,
-                (int) 1);
+            // flowFieldCS.Dispatch(particlesKernelIndex, Mathf.CeilToInt((int)PARTICLES_NUM / (int)TCOUNT_X) + 1,1, 1);
+            flowFieldCS.Dispatch(particlesKernelIndex, 1024,1, 1);
         }
         
         #endregion

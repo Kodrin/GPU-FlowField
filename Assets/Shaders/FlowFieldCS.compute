@@ -1,7 +1,7 @@
 ﻿#pragma kernel FlowField
 #pragma kernel Particles
 
-#define X_THREAD_COUNT 512
+#define X_THREAD_COUNT 1024
 #define Y_THREAD_COUNT 1
 #define Z_THREAD_COUNT 1
 
@@ -133,7 +133,7 @@ void FlowField (uint3 id : SV_DispatchThreadID)
 
 }
 
-[numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
+[numthreads(1024,Y_THREAD_COUNT,Z_THREAD_COUNT)]
 void Particles (uint3 id : SV_DispatchThreadID)
 {
     int idx = id.x;
