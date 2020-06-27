@@ -1,7 +1,7 @@
 ﻿#pragma kernel FlowField
 #pragma kernel Particles
 
-#define X_THREAD_COUNT 1024
+#define X_THREAD_COUNT 64
 #define Y_THREAD_COUNT 1
 #define Z_THREAD_COUNT 1
 
@@ -133,16 +133,16 @@ void FlowField (uint3 id : SV_DispatchThreadID)
 
 }
 
-[numthreads(1024,Y_THREAD_COUNT,Z_THREAD_COUNT)]
+[numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
 void Particles (uint3 id : SV_DispatchThreadID)
 {
     int idx = id.x;
     ParticleData particle = _ParticleBuffer[idx];
     
     uint flowIndex = GrabGridIndex(particle.position);
-    //float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction;
+    float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction;
     
-    //particle.direction = flowDirection;
+    particle.direction = flowDirection;
     particle.position += particle.direction * 0.01;
     
     LoopPosition(particle.position);

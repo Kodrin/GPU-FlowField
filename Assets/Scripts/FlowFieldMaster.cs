@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 using System.Runtime.InteropServices;
 
 namespace FlowField
@@ -39,6 +40,9 @@ namespace FlowField
         [SerializeField] protected Shader flowFieldShader;
         [SerializeField] protected Shader particlesShader;
 
+        protected MaterialPropertyBlock flowFieldBlock;
+        protected MaterialPropertyBlock particlesBlock;
+
         [Header("FLOWFIELD PARAMETERS")] 
         [SerializeField] protected float cellSize = 2.5f;
 
@@ -46,7 +50,7 @@ namespace FlowField
         protected const string KERNEL_PARTICLES = "Particles";
 
         [SerializeField] protected int FLOWFIELD_POINTS_NUM;
-        [SerializeField] protected ParticleCounter PARTICLES_NUM;
+        [SerializeField] protected uint PARTICLES_NUM;
 
         protected int xPointCount;
         protected int yPointCount;
@@ -88,7 +92,7 @@ namespace FlowField
 
         protected override void OnRenderObject()
         {
-            RenderFlowField();
+            // RenderFlowField();
             RenderParticles();
         }
         
@@ -104,13 +108,13 @@ namespace FlowField
         {
             if (flowFieldBuffer != null)
             {
-                flowFieldBuffer.Release();
+                flowFieldBuffer.Dispose();
                 flowFieldBuffer = null;
             }
 
             if(particlesBuffer != null)
             {
-                particlesBuffer.Release();
+                particlesBuffer.Dispose();
                 particlesBuffer = null;
             }
         }
@@ -199,7 +203,7 @@ namespace FlowField
                 }
             }
 			
-            Debug.Log(iterations);
+            // Debug.Log(iterations);
 			
             flowFieldBuffer.SetData(flowPoints);
         }
@@ -235,6 +239,9 @@ namespace FlowField
                 // out YNumThreadFlowField, out ZNumThreadFlowField);
             // flowFieldCS.GetKernelThreadGroupSizes(particlesKernelIndex, out XNumThreadParticles,
                 // out YNumThreadParticles, out ZNumThreadParticles);
+
+            flowFieldBlock = new MaterialPropertyBlock();
+            particlesBlock = new MaterialPropertyBlock();
         }
 
         protected override void GenerateBuffers()
@@ -263,7 +270,7 @@ namespace FlowField
         {
             flowFieldCS.SetBuffer(flowFieldKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
             // flowFieldCS.Dispatch(flowFieldKernelIndex, Mathf.CeilToInt(FLOWFIELD_POINTS_NUM / (int)TCOUNT_X) + 1, 1, 1);
-            flowFieldCS.Dispatch(flowFieldKernelIndex, Mathf.CeilToInt(FLOWFIELD_POINTS_NUM / (int)TCOUNT_X) + 1, 1, 1);
+            flowFieldCS.Dispatch(flowFieldKernelIndex, (Mathf.CeilToInt(FLOWFIELD_POINTS_NUM / (int)TCOUNT_X) + 1), 1, 1);
         }
 
         protected void DispatchParticles()
@@ -271,7 +278,7 @@ namespace FlowField
             flowFieldCS.SetBuffer(particlesKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
             flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
             // flowFieldCS.Dispatch(particlesKernelIndex, Mathf.CeilToInt((int)PARTICLES_NUM / (int)TCOUNT_X) + 1,1, 1);
-            flowFieldCS.Dispatch(particlesKernelIndex, 1024,1, 1);
+            flowFieldCS.Dispatch(particlesKernelIndex, (Mathf.CeilToInt((int)PARTICLES_NUM / (int)TCOUNT_X) + 1), 1, 1);
         }
         
         #endregion
@@ -303,14 +310,32 @@ namespace FlowField
         {
             flowFieldMat.SetPass(0); 
             flowFieldMat.SetBuffer("_FlowFieldBuffer", flowFieldBuffer);
-            Graphics.DrawProceduralNow(MeshTopology.Points, (int)FLOWFIELD_POINTS_NUM);
+            Graphics.DrawProceduralNow(MeshTopology.Points, flowFieldBuffer.count);
+            // Graphics.DrawProceduralNow(MeshTopology.Lines,(int)FLOWFIELD_POINTS_NUM, 2);
+
+            
+            // Graphics.DrawProcedural(
+            //     flowFieldMat,
+            //     new Bounds(transform.position, transform.lossyScale * 5),
+            //     MeshTopology.Lines, FLOWFIELD_POINTS_NUM * 2, 1,
+            //     null, null,
+            //     ShadowCastingMode.TwoSided, true, gameObject.layer
+            // );
         }
 
         protected void RenderParticles()
         {
             particlesMat.SetPass(0); 
             particlesMat.SetBuffer("_ParticleBuffer", particlesBuffer);
-            Graphics.DrawProceduralNow(MeshTopology.Points, (int)PARTICLES_NUM);
+            Graphics.DrawProceduralNow(MeshTopology.Points, particlesBuffer.count);
+
+            // Graphics.DrawProcedural(
+            //     particlesMat,
+            //     new Bounds(transform.position, transform.lossyScale * 5),
+            //     MeshTopology.Lines, (int)PARTICLES_NUM * 2, 1,
+            //     null, block,
+            //     ShadowCastingMode.TwoSided, true, gameObject.layer
+            // );
         }
         
         #endregion

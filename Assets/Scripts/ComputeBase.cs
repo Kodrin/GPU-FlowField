@@ -33,7 +33,7 @@ namespace FlowField
         [SerializeField] protected ThreadCount TCOUNT_Y = ThreadCount.T_1;
         [SerializeField] protected ThreadCount TCOUNT_Z = ThreadCount.T_1;
         
-        protected void Awake()
+        protected virtual void Awake()
         {
             
         }

@@ -49,7 +49,7 @@
                 return o;
             }
 
-            [maxvertexcount(4)]
+            [maxvertexcount(2)]
             void geom(point v2g In[1], inout LineStream<g2f> linestream)
             {
                 g2f o = (g2f)0;
