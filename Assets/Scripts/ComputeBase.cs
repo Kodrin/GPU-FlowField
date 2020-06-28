@@ -33,21 +33,12 @@ namespace FlowField
         [SerializeField] protected ThreadCount TCOUNT_Y = ThreadCount.T_1;
         [SerializeField] protected ThreadCount TCOUNT_Z = ThreadCount.T_1;
         
-        protected virtual void Awake()
-        {
-            
-        }
+        protected virtual void Awake() {}
 
-        protected virtual void Start()
-        {
-            
-        }
+        protected virtual void Start() {}
 
-        protected virtual void Update()
-        {
-                
-        }
-        
+        protected virtual void Update() {}
+
         protected abstract void OnRenderObject();
         protected abstract void OnDestroy();
         protected abstract void ReleaseBuffers();
@@ -59,7 +50,7 @@ namespace FlowField
         protected abstract void Dispatch();
         
 
-        protected void OnDrawGizmos()
+        protected virtual void OnDrawGizmos()
         {
             Gizmos.color = Color.white;
             Gizmos.DrawWireCube(this.transform.position, simulationSpace);
