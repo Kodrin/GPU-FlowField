@@ -7,6 +7,15 @@ using System.Runtime.InteropServices;
 namespace FlowField
 {
     [System.Serializable]
+    public enum RenderMode
+    {
+        FlowfieldOnly,
+        ParticlesOnly,
+        Both
+    }
+    
+    
+    [System.Serializable]
     public enum ParticleCounter
     {	
         N_128 = 128,
@@ -35,21 +44,27 @@ namespace FlowField
     
     public class FlowFieldMaster : ComputeBase
     {
+        protected const string KERNEL_FLOWFIELD = "FlowField";
+        protected const string KERNEL_PARTICLES = "Particles";
+
         [Header("SHADERS")]
         [SerializeField] protected ComputeShader flowFieldCS;
         [SerializeField] protected Shader flowFieldShader;
         [SerializeField] protected Shader particlesShader;
 
         [Header("FLOWFIELD PARAMETERS")] 
-        [SerializeField] protected float cellSize = 2.5f;
+        [SerializeField] protected RenderMode renderMode = RenderMode.ParticlesOnly;
+        [Range(0.2f, 1.0f)]
+        [SerializeField] protected float flowfieldCellSize = 0.5f; //size for individual cell in flowfield grid (the smaller it is, the more cells it will have)
+        
+        [Header("PARTICLE PARAMETERS")] 
         [SerializeField] protected float particleRotationSpeed = 2.0f;
-
-        protected const string KERNEL_FLOWFIELD = "FlowField";
-        protected const string KERNEL_PARTICLES = "Particles";
-
-        [SerializeField] protected int FLOWFIELD_POINTS_NUM;
+        protected int FLOWFIELD_POINTS_NUM;
         [SerializeField] protected uint PARTICLES_NUM;
 
+        [Header("NOISE PARAMETERS")] [SerializeField]
+        protected float worleyJitter = 1.0f;
+        
         protected int xPointCount;
         protected int yPointCount;
         protected int zPointCount;
@@ -82,8 +97,19 @@ namespace FlowField
 
         protected override void OnRenderObject()
         {
-            // RenderFlowField();
-            RenderParticles();
+            switch (renderMode)
+            {
+                case RenderMode.FlowfieldOnly:
+                    RenderFlowField();
+                    break;
+                case RenderMode.ParticlesOnly:
+                    RenderParticles();
+                    break;
+                case RenderMode.Both:
+                    RenderFlowField();
+                    RenderParticles();
+                    break;
+            }
         }
         
         protected override void OnDestroy()
@@ -136,9 +162,9 @@ namespace FlowField
 
         void GetFlowFieldPointAmount()
         {
-            xPointCount = (int)Mathf.Floor(simulationSpace.x/cellSize);
-            yPointCount = (int)Mathf.Floor(simulationSpace.y/cellSize);
-            zPointCount = (int)Mathf.Floor(simulationSpace.z/cellSize);
+            xPointCount = (int)Mathf.Floor(simulationSpace.x/flowfieldCellSize);
+            yPointCount = (int)Mathf.Floor(simulationSpace.y/flowfieldCellSize);
+            zPointCount = (int)Mathf.Floor(simulationSpace.z/flowfieldCellSize);
 
             FLOWFIELD_POINTS_NUM = xPointCount * yPointCount * zPointCount;
 
@@ -181,9 +207,9 @@ namespace FlowField
                         var index =  (x * yPointCount + y) * zPointCount + z;
 
                         Vector3 position = new Vector3(
-                            simulationSpace.x / xPointCount * x + cellSize/2,
-                            simulationSpace.y / yPointCount * y + cellSize/2,
-                            simulationSpace.z / zPointCount * z + cellSize/2
+                            simulationSpace.x / xPointCount * x + flowfieldCellSize/2,
+                            simulationSpace.y / yPointCount * y + flowfieldCellSize/2,
+                            simulationSpace.z / zPointCount * z + flowfieldCellSize/2
                         );
                         position += this.transform.position - simulationSpace/2;
 						
@@ -239,6 +265,7 @@ namespace FlowField
             flowFieldCS.SetInt("_ZCellCount", zPointCount);
             flowFieldCS.SetFloat("_RotationSpeed", particleRotationSpeed);
             flowFieldCS.SetFloat("_DeltaTime", Time.deltaTime);
+            flowFieldCS.SetFloat("_Jitter", worleyJitter);
         }
 
         protected override void Dispatch()

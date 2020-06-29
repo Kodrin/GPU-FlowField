@@ -7,6 +7,7 @@
 
 #include "DataStructs.cginc"
 #include "Voronoi3D.cginc"
+#include "Worley.cginc"
 
 float3 _BoundsDimensions;
 float3 _BoundsPosition;
@@ -17,6 +18,7 @@ uint _ZCellCount;
 float _RotationSpeed;
 float _DeltaTime;
 
+float _Jitter;
 
 RWStructuredBuffer<FlowFieldPointData> _FlowFieldPointBuffer;
 RWStructuredBuffer<ParticleData> _ParticleBuffer;
@@ -130,7 +132,8 @@ void FlowField (uint3 id : SV_DispatchThreadID)
     int idx = id.x;
     FlowFieldPointData flowPoint = _FlowFieldPointBuffer[idx];
     
-    float3 noise = voronoiNoise(flowPoint.position);
+    //float3 noise = voronoiNoise(flowPoint.position);
+    float3 noise = float3(worley(flowPoint.position, _Jitter, false), 1);
     flowPoint.direction = normalize(noise);
     
     _FlowFieldPointBuffer[idx] = flowPoint;

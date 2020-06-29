@@ -75,9 +75,6 @@
                 o.color = color; 
                 linestream.Append(o); 
                 linestream.RestartStrip();     
-        
-
-
             }
 
             fixed4 frag (g2f i) : SV_Target
