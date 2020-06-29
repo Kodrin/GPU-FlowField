@@ -10,6 +10,7 @@ travel through this grid space, they will read the nearest point within that flo
 direction. For this example, I am showing how you can achieve these result with a compute shader operation in 
 Unity's Universal Rendering Pipeline.
 
+<img src="Media/flow.gif" width=100%>
 
 ### Setup Process (C# side)
 
@@ -67,7 +68,7 @@ protected void RenderFlowField()
 }
 ```
 
-### Shader-Side
+### Compute Shader-Side
 
 ---
 
