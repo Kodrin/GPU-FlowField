@@ -64,7 +64,8 @@
                 float4 color;
                 fixed4 white = fixed4(1,1,1,1);
                 fixed4 black = fixed4(0,0,0,0);
-                color = float4(direction, 1);
+                //color = float4(direction, 1);
+                color = white;
                 //color = length(direction) * intensity;
                 
                 //direction
@@ -76,7 +77,6 @@
                 linestream.Append(o); 
                 linestream.RestartStrip();     
         
-
 
             }
 

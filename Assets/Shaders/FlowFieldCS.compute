@@ -14,6 +14,10 @@ uint _XCellCount;
 uint _YCellCount;
 uint _ZCellCount;
 
+float _RotationSpeed;
+float _DeltaTime;
+
+
 RWStructuredBuffer<FlowFieldPointData> _FlowFieldPointBuffer;
 RWStructuredBuffer<ParticleData> _ParticleBuffer;
 
@@ -142,7 +146,10 @@ void Particles (uint3 id : SV_DispatchThreadID)
     uint flowIndex = GrabGridIndex(particle.position);
     float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction;
     
-    particle.direction = flowDirection;
+    float rotation = exp(-_RotationSpeed * _DeltaTime);
+	particle.direction = lerp((flowDirection), normalize(particle.direction), rotation);
+    
+    //particle.direction = flowDirection;
     particle.position += particle.direction * 0.01;
     
     LoopPosition(particle.position);

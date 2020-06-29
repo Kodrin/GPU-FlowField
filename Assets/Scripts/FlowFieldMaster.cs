@@ -42,6 +42,7 @@ namespace FlowField
 
         [Header("FLOWFIELD PARAMETERS")] 
         [SerializeField] protected float cellSize = 2.5f;
+        [SerializeField] protected float particleRotationSpeed = 2.0f;
 
         protected const string KERNEL_FLOWFIELD = "FlowField";
         protected const string KERNEL_PARTICLES = "Particles";
@@ -81,7 +82,7 @@ namespace FlowField
 
         protected override void OnRenderObject()
         {
-            RenderFlowField();
+            // RenderFlowField();
             RenderParticles();
         }
         
@@ -236,6 +237,8 @@ namespace FlowField
             flowFieldCS.SetInt("_XCellCount", xPointCount);
             flowFieldCS.SetInt("_YCellCount", yPointCount);
             flowFieldCS.SetInt("_ZCellCount", zPointCount);
+            flowFieldCS.SetFloat("_RotationSpeed", particleRotationSpeed);
+            flowFieldCS.SetFloat("_DeltaTime", Time.deltaTime);
         }
 
         protected override void Dispatch()
