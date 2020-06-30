@@ -25,7 +25,7 @@
                 float2 uv : TEXCOORD0;
                 float3 position : TEXCOORD1;
                 float3 direction : TEXCOORD2;
-                float3 speed : TEXCOORD3;
+                float speed : TEXCOORD3;
             };
 
             struct g2f

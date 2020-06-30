@@ -14,7 +14,6 @@ namespace FlowField
         Both
     }
     
-    
     [System.Serializable]
     public enum ParticleCounter
     {	
@@ -31,17 +30,7 @@ namespace FlowField
         N_64K = 65536,
         N_128K = 131072
     }
-    
-    [System.Serializable]
-    public class ComputeOperation
-    {
-        public uint XNumThread;
-        public uint YNumThread;
-        public uint ZNumThread;
-        public ComputeBuffer buffer;
-        
-    }
-    
+
     public class FlowFieldMaster : ComputeBase
     {
         protected const string KERNEL_FLOWFIELD = "FlowField";
@@ -58,12 +47,15 @@ namespace FlowField
         [SerializeField] protected float flowfieldCellSize = 0.5f; //size for individual cell in flowfield grid (the smaller it is, the more cells it will have)
         
         [Header("PARTICLE PARAMETERS")] 
+        [SerializeField] protected float particleSpeed = 1.0f;
         [SerializeField] protected float particleRotationSpeed = 2.0f;
         protected int FLOWFIELD_POINTS_NUM;
         [SerializeField] protected uint PARTICLES_NUM;
 
-        [Header("NOISE PARAMETERS")] [SerializeField]
-        protected float worleyJitter = 1.0f;
+        [Header("NOISE PARAMETERS")] 
+        [SerializeField] protected float worleyJitter = 1.0f;
+        [Range(0,1)]
+        [SerializeField] protected float vorToWorley = 0.5f;
         
         protected int xPointCount;
         protected int yPointCount;
@@ -124,13 +116,13 @@ namespace FlowField
         {
             if (flowFieldBuffer != null)
             {
-                flowFieldBuffer.Dispose();
+                flowFieldBuffer.Release();
                 flowFieldBuffer = null;
             }
 
             if(particlesBuffer != null)
             {
-                particlesBuffer.Dispose();
+                particlesBuffer.Release();
                 particlesBuffer = null;
             }
         }
@@ -263,9 +255,13 @@ namespace FlowField
             flowFieldCS.SetInt("_XCellCount", xPointCount);
             flowFieldCS.SetInt("_YCellCount", yPointCount);
             flowFieldCS.SetInt("_ZCellCount", zPointCount);
+            flowFieldCS.SetInt("_FlowPointAmount", FLOWFIELD_POINTS_NUM);
+            flowFieldCS.SetInt("_ParticleAmount", (int)PARTICLES_NUM);
+            flowFieldCS.SetFloat("_ParticleSpeed", particleSpeed);
             flowFieldCS.SetFloat("_RotationSpeed", particleRotationSpeed);
             flowFieldCS.SetFloat("_DeltaTime", Time.deltaTime);
             flowFieldCS.SetFloat("_Jitter", worleyJitter);
+            flowFieldCS.SetFloat("_VorToWorley", vorToWorley);
         }
 
         protected override void Dispatch()
@@ -277,14 +273,15 @@ namespace FlowField
         protected void DispatchFlowField()
         {
             flowFieldCS.SetBuffer(flowFieldKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
-            flowFieldCS.Dispatch(flowFieldKernelIndex, (Mathf.CeilToInt(FLOWFIELD_POINTS_NUM / (int)TCOUNT_X) + 1), 1, 1);
+            flowFieldCS.Dispatch(flowFieldKernelIndex, Mathf.CeilToInt(((float)FLOWFIELD_POINTS_NUM / (float)TCOUNT_X) + 1), 1, 1);
         }
 
         protected void DispatchParticles()
         {
             flowFieldCS.SetBuffer(particlesKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
             flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
-            flowFieldCS.Dispatch(particlesKernelIndex, (Mathf.CeilToInt((int)PARTICLES_NUM / (int)TCOUNT_X) + 1), 1, 1);
+            // flowFieldCS.Dispatch(particlesKernelIndex, (int)PARTICLES_NUM, 1, 1);
+            flowFieldCS.Dispatch(particlesKernelIndex, Mathf.CeilToInt(((float)PARTICLES_NUM / (float)TCOUNT_X) + 1), 1, 1);
         }
         
         #endregion

@@ -1,9 +1,12 @@
 ﻿#pragma kernel FlowField
 #pragma kernel Particles
 
-#define X_THREAD_COUNT 64
+#define X_THREAD_COUNT 512
 #define Y_THREAD_COUNT 1
 #define Z_THREAD_COUNT 1
+
+#define DISCARD_FLOWFIELD if((int)id.x >= _FlowPointAmount) return;
+#define DISCARD_PARTICLE if((int)id.x >= _ParticleAmount) return;
 
 #include "DataStructs.cginc"
 #include "Voronoi3D.cginc"
@@ -15,69 +18,18 @@ uint _XCellCount;
 uint _YCellCount;
 uint _ZCellCount;
 
+float _ParticleSpeed;
 float _RotationSpeed;
 float _DeltaTime;
 
 float _Jitter;
+float _VorToWorley;
+
+int _FlowPointAmount;
+int _ParticleAmount;
 
 RWStructuredBuffer<FlowFieldPointData> _FlowFieldPointBuffer;
 RWStructuredBuffer<ParticleData> _ParticleBuffer;
-
-// RONJA TUTORIALS REFERENCE 
-float3 voronoiNoise(float3 value){
-    float3 baseCell = floor(value);
-
-    //first pass to find the closest cell
-    float minDistToCell = 10;
-    float3 toClosestCell;
-    float3 closestCell;
-    [unroll]
-    for(int x1=-1; x1<=1; x1++){
-        [unroll]
-        for(int y1=-1; y1<=1; y1++){
-            [unroll]
-            for(int z1=-1; z1<=1; z1++){
-                float3 cell = baseCell + float3(x1, y1, z1);
-                float3 cellPosition = cell + rand3dTo3d(cell);
-                float3 toCell = cellPosition - value;
-                float distToCell = length(toCell);
-                if(distToCell < minDistToCell){
-                    minDistToCell = distToCell;
-                    closestCell = cell;
-                    toClosestCell = toCell;
-                }
-            }
-        }
-    }
-    
-    //second pass to find the distance to the closest edge
-    float minEdgeDistance = 10;
-    [unroll]
-    for(int x2=-1; x2<=1; x2++){
-        [unroll]
-        for(int y2=-1; y2<=1; y2++){
-            [unroll]
-            for(int z2=-1; z2<=1; z2++){
-                float3 cell = baseCell + float3(x2, y2, z2);
-                float3 cellPosition = cell + rand3dTo3d(cell);
-                float3 toCell = cellPosition - value;
-
-                float3 diffToClosestCell = abs(closestCell - cell);
-                bool isClosestCell = diffToClosestCell.x + diffToClosestCell.y + diffToClosestCell.z < 0.1;
-                if(!isClosestCell){
-                    float3 toCenter = (toClosestCell + toCell) * 0.5;
-                    float3 cellDifference = normalize(toCell - toClosestCell);
-                    float edgeDistance = dot(toCenter, cellDifference);
-                    minEdgeDistance = min(minEdgeDistance, edgeDistance);
-                }
-            }
-        }
-    }
-    
-
-    float random = rand3dTo1d(closestCell);
-    return float3(minDistToCell, random, minEdgeDistance);
-}
 
 //TO REPEAT PARTICLE POSITION AT THE EDGES
 float3 LoopPosition(inout float3 position)
@@ -129,32 +81,38 @@ uint GrabGridIndex(float3 position)
 [numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
 void FlowField (uint3 id : SV_DispatchThreadID)
 {
-    int idx = id.x;
-    FlowFieldPointData flowPoint = _FlowFieldPointBuffer[idx];
+        DISCARD_FLOWFIELD
+        int idx = id.x;
+        FlowFieldPointData flowPoint = _FlowFieldPointBuffer[idx];
+        
+        float3 vorNoise = voronoiNoise(flowPoint.position);
+        float3 worleyNoise = float3(worley(flowPoint.position, _Jitter, false), random(flowPoint.position.xy));
+        
+        float3 flowDirection = lerp(vorNoise, worleyNoise, _VorToWorley);
+        flowPoint.direction = normalize(flowDirection);
+        
+        _FlowFieldPointBuffer[idx] = flowPoint;
     
-    //float3 noise = voronoiNoise(flowPoint.position);
-    float3 noise = float3(worley(flowPoint.position, _Jitter, false), 1);
-    flowPoint.direction = normalize(noise);
-    
-    _FlowFieldPointBuffer[idx] = flowPoint;
 
 }
 
 [numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
 void Particles (uint3 id : SV_DispatchThreadID)
 {
-    int idx = id.x;
-    ParticleData particle = _ParticleBuffer[idx];
+        
+        DISCARD_PARTICLE
+        int idx = id.x;
+        ParticleData particle = _ParticleBuffer[idx];
+        
+        uint flowIndex = GrabGridIndex(particle.position);
+        float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction;
+        
+        float rotation = exp(-_RotationSpeed * _DeltaTime);
+        
+        particle.direction = lerp((flowDirection), normalize(particle.direction), rotation);
+        particle.position += particle.direction * (particle.speed * _ParticleSpeed);
+        
+        LoopPosition(particle.position);
+        _ParticleBuffer[idx] = particle;
     
-    uint flowIndex = GrabGridIndex(particle.position);
-    float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction;
-    
-    float rotation = exp(-_RotationSpeed * _DeltaTime);
-	particle.direction = lerp((flowDirection), normalize(particle.direction), rotation);
-    
-    //particle.direction = flowDirection;
-    particle.position += particle.direction * 0.01;
-    
-    LoopPosition(particle.position);
-    _ParticleBuffer[idx] = particle;
 }

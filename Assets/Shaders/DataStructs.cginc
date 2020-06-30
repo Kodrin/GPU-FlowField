@@ -12,7 +12,7 @@ struct ParticleData
 {
     float3 position;
     float3 direction;
-    float3 speed;
+    float speed;
 };
 
 #endif

@@ -1,4 +1,5 @@
-﻿// Permutation polynomial: (34x^2 + x) fmod 289
+﻿// reference : https://github.com/Erkaman/glsl-worley
+// Permutation polynomial: (34x^2 + x) fmod 289
 float3 permute(float3 x) {
   return fmod((34.0 * x + 1.0) * x, 289.0);
 }
