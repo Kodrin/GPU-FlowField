@@ -1,7 +1,7 @@
 ﻿#pragma kernel FlowField
 #pragma kernel Particles
 
-#define X_THREAD_COUNT 512
+#define X_THREAD_COUNT 1024
 #define Y_THREAD_COUNT 1
 #define Z_THREAD_COUNT 1
 

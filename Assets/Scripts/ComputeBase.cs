@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace FlowField
 {
-    
+    //similar to NUMTHREAD, when creating dispatch threadgroups
     [System.Serializable]
     public enum ThreadCount
     {
@@ -29,14 +29,12 @@ namespace FlowField
         [Header("SIMULATION PARAMS")] 
         [SerializeField] protected Vector3 simulationSpace = Vector3.one;
 
-        [SerializeField] protected ThreadCount TCOUNT_X = ThreadCount.T_256;
+        [SerializeField] protected ThreadCount TCOUNT_X = ThreadCount.T_1024;
         [SerializeField] protected ThreadCount TCOUNT_Y = ThreadCount.T_1;
         [SerializeField] protected ThreadCount TCOUNT_Z = ThreadCount.T_1;
         
         protected virtual void Awake() {}
-
         protected virtual void Start() {}
-
         protected virtual void Update() {}
 
         protected abstract void OnRenderObject();

@@ -9,6 +9,7 @@
 /[Bb]uilds/
 /[Ll]ogs/
 /[Mm]emoryCaptures/
+/.[Ii]dea/
 
 # Never ignore Asset meta data
 !/[Aa]ssets/**/*.meta
@@ -58,7 +59,3 @@ sysinfo.txt
 # Crashlytics generated file
 crashlytics-build.properties
 
-.idea/.idea.GPU-FLowField/.idea/indexLayout.xml
-.idea/.idea.GPU-FLowField/.idea/indexLayout.xml
-.idea/.idea.GPU-FLowField/.idea/indexLayout.xml
-.idea/.idea.GPU-FLowField/.idea/indexLayout.xml

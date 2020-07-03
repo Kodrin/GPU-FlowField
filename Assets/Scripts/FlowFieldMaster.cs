@@ -143,7 +143,7 @@ namespace FlowField
 
         #region GENERATE BUFFER
         
-        Vector3 RandomWithinSpace()
+        protected Vector3 RandomWithinSpace()
         {
             Vector3 rand = Random.insideUnitSphere;
             Vector3 position = new Vector3(simulationSpace.x/2 * rand.x, simulationSpace.y/2 * rand.y, simulationSpace.z/2 * rand.z);
@@ -152,7 +152,7 @@ namespace FlowField
             return position;
         }
 
-        void GetFlowFieldPointAmount()
+        protected void GetFlowFieldPointAmount()
         {
             xPointCount = (int)Mathf.Floor(simulationSpace.x/flowfieldCellSize);
             yPointCount = (int)Mathf.Floor(simulationSpace.y/flowfieldCellSize);
@@ -162,7 +162,7 @@ namespace FlowField
 
         }
 
-        FlowFieldPointData CreateFlowFieldPoint(Vector3 position)
+        protected FlowFieldPointData CreateFlowFieldPoint(Vector3 position)
         {
             FlowFieldPointData point = new FlowFieldPointData();
 
@@ -173,7 +173,7 @@ namespace FlowField
             return point;
         }
 
-        ParticleData CreateParticle()
+        protected ParticleData CreateParticle()
         {
             ParticleData particle = new ParticleData();
 
@@ -280,7 +280,6 @@ namespace FlowField
         {
             flowFieldCS.SetBuffer(particlesKernelIndex, "_FlowFieldPointBuffer", flowFieldBuffer);
             flowFieldCS.SetBuffer(particlesKernelIndex, "_ParticleBuffer", particlesBuffer);
-            // flowFieldCS.Dispatch(particlesKernelIndex, (int)PARTICLES_NUM, 1, 1);
             flowFieldCS.Dispatch(particlesKernelIndex, Mathf.CeilToInt(((float)PARTICLES_NUM / (float)TCOUNT_X) + 1), 1, 1);
         }
         
