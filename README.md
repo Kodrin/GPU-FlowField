@@ -107,4 +107,4 @@ Open-source! Use for whatever you want.
 If you enjoy these open-source projects, the most direct way to support the development of future releases
 is through patreon.
 
-<a href="https://www.patreon.com/bePatron?u=17790833" data-patreon-widget-type="become-patron-button">Become a Patron!</a><script async src="https://c6.patreon.com/becomePatronButton.bundle.js"></script>
+<a href="https://www.patreon.com/bePatron?u=17790833" data-patreon-widget-type="become-patron-button">Become a Patron!</a>
