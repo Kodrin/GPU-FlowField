@@ -5,13 +5,16 @@
 #define Y_THREAD_COUNT 1
 #define Z_THREAD_COUNT 1
 
-#define DISCARD_FLOWFIELD if((int)id.x >= _FlowPointAmount) return;
+//discard functions to make sure we have the right index in the array
+#define DISCARD_FLOWFIELD if((int)id.x >= _FlowPointAmount) return; 
 #define DISCARD_PARTICLE if((int)id.x >= _ParticleAmount) return;
 
-#include "DataStructs.cginc"
+//data structures for buffers and noise functions 
+#include "DataStructs.cginc" 
 #include "Voronoi3D.cginc"
 #include "Worley.cginc"
 
+//Constants
 float3 _BoundsDimensions;
 float3 _BoundsPosition;
 uint _XCellCount;
@@ -81,38 +84,38 @@ uint GrabGridIndex(float3 position)
 [numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
 void FlowField (uint3 id : SV_DispatchThreadID)
 {
-        DISCARD_FLOWFIELD
-        int idx = id.x;
-        FlowFieldPointData flowPoint = _FlowFieldPointBuffer[idx];
-        
-        float3 vorNoise = voronoiNoise(flowPoint.position);
-        float3 worleyNoise = float3(worley(flowPoint.position, _Jitter, false), random(flowPoint.position.xy));
-        
-        float3 flowDirection = lerp(vorNoise, worleyNoise, _VorToWorley);
-        flowPoint.direction = normalize(flowDirection);
-        
-        _FlowFieldPointBuffer[idx] = flowPoint;
+    //discard out of index id if there are any
+    DISCARD_FLOWFIELD
     
-
+    int idx = id.x;
+    FlowFieldPointData flowPoint = _FlowFieldPointBuffer[idx];
+    
+    float3 vorNoise = voronoiNoise(flowPoint.position); //sample voronoi noise
+    float3 worleyNoise = float3(worley(flowPoint.position, _Jitter, false), random(flowPoint.position.xy)); //sample worley noise
+    
+    float3 flowDirection = lerp(vorNoise, worleyNoise, _VorToWorley); //noise slider between the 2 noise functions
+    flowPoint.direction = normalize(flowDirection);
+    
+    _FlowFieldPointBuffer[idx] = flowPoint;
 }
 
 [numthreads(X_THREAD_COUNT,Y_THREAD_COUNT,Z_THREAD_COUNT)]
 void Particles (uint3 id : SV_DispatchThreadID)
 {
-        
-        DISCARD_PARTICLE
-        int idx = id.x;
-        ParticleData particle = _ParticleBuffer[idx];
-        
-        uint flowIndex = GrabGridIndex(particle.position);
-        float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction;
-        
-        float rotation = exp(-_RotationSpeed * _DeltaTime);
-        
-        particle.direction = lerp((flowDirection), normalize(particle.direction), rotation);
-        particle.position += particle.direction * (particle.speed * _ParticleSpeed);
-        
-        LoopPosition(particle.position);
-        _ParticleBuffer[idx] = particle;
+    //discard out of index id if there are any
+    DISCARD_PARTICLE
     
+    int idx = id.x;
+    ParticleData particle = _ParticleBuffer[idx];
+    
+    uint flowIndex = GrabGridIndex(particle.position); //find the nearest flow point index
+    float3 flowDirection = _FlowFieldPointBuffer[flowIndex].direction; //access it directly
+    
+    float rotation = exp(-_RotationSpeed * _DeltaTime); 
+    
+    particle.direction = lerp((flowDirection), normalize(particle.direction), rotation);
+    particle.position += particle.direction * (particle.speed * _ParticleSpeed);
+    
+    LoopPosition(particle.position); //loop extremities
+    _ParticleBuffer[idx] = particle;
 }
